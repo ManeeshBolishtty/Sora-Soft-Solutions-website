@@ -1,135 +1,75 @@
-// Smooth scroll to footer when "Get in Touch" is clicked
-document.getElementById('contactBtn').addEventListener('click', () => {
-  document.getElementById('contact').scrollIntoView({ behavior: 'smooth' });
-});
-
-// Toggle expandable service cards
-document.querySelectorAll('.toggle').forEach(button => {
-  button.addEventListener('click', () => {
-    const card = button.closest('.card');
-    const content = card.querySelector('.more-content');
-    const isOpen = card.classList.contains('expanded');
-
-    if (isOpen) {
-      card.classList.remove('expanded');
-      content.classList.remove('show');
-      content.style.maxHeight = null;
-      button.textContent = 'Read More';
-    } else {
-      card.classList.add('expanded');
-      content.classList.add('show');
-      content.style.maxHeight = content.scrollHeight + 'px';
-      button.textContent = 'Read Less';
-    }
-  });
-});
-
-// Services expand/collapse logic - paste into your external JS (main bundle)
-// Ensure this runs after DOM is ready. If unsure, keep the DOMContentLoaded wrapper.
-
-(function () {
-  const allowSingleOpen = true; // set false to allow multiple cards open
-  function onReady(fn) {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', fn);
-    } else {
-      fn();
-    }
+(() => {
+  const menuButton = document.querySelector('.menu-toggle');
+  const nav = document.querySelector('#site-nav');
+  if (menuButton && nav) {
+    menuButton.addEventListener('click', () => {
+      const open = menuButton.getAttribute('aria-expanded') === 'true';
+      menuButton.setAttribute('aria-expanded', String(!open));
+      menuButton.setAttribute('aria-label', open ? 'Open navigation' : 'Close navigation');
+      nav.classList.toggle('is-open', !open);
+    });
+    nav.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
+      nav.classList.remove('is-open');
+      menuButton.setAttribute('aria-expanded', 'false');
+      menuButton.setAttribute('aria-label', 'Open navigation');
+    }));
   }
 
-  onReady(() => {
-    const buttons = Array.from(document.querySelectorAll('.toggle-details'));
+  const details = {
+    s4hana: { kicker:'SAP S/4HANA', title:'Business processes, connected clearly.', copy:'We help teams understand SAP S/4HANA requirements, business processes and dependencies. The aim is to support clearer planning, stronger alignment between business and technology, and practical next steps suited to the organisation’s needs.' },
+    vistex: { kicker:'SAP VISTEX', title:'Clearer control of pricing and incentives.', copy:'Our focus includes SAP Vistex-related commercial processes such as rebates, incentives, pricing agreements and associated business requirements. We start by understanding the process and the questions the team needs the system to answer.' },
+    sales: { kicker:'SAP SALES & DISTRIBUTION', title:'Processes aligned with the business.', copy:'Sales and distribution processes touch customers, orders, deliveries, billing and the wider operational landscape. We look at business needs and process dependencies to help make requirements easier to understand and discuss.' },
+    advisory: { kicker:'CONSULTING & SUPPORT', title:'A thoughtful partner through the journey.', copy:'Early planning, implementation discussions, issue investigation and ongoing improvement all benefit from a clear view of the business context. Our approach emphasises listening, straightforward communication and useful next steps.' },
+    digital: { kicker:'WEB & DIGITAL EXPERIENCES', title:'Useful digital ideas, thoughtfully brought to life.', copy:'We explore digital experiences that communicate clearly, feel intuitive and support real user needs—from company websites to early-stage product concepts. The work starts with purpose, audience and the problem to be solved.' },
+    soratrade: { kicker:'A SORASOFT PRODUCT · IN DEVELOPMENT', title:'A clearer home for trade records and review.', copy:'SoraTrade is an early-stage product concept for organising trade records, notes and performance reviews in one workflow. It is not presented as a live service. Planned features and availability may change, and the concept is for record-keeping and review—not profit guarantees or trading advice.' }
+  };
 
-    function collapseDetails(card) {
-      const details = card.querySelector('.service-details');
-      const btn = card.querySelector('.toggle-details');
-      if (!details) return;
-      // start collapse animation
-      details.style.maxHeight = details.scrollHeight + 'px';
-      // force reflow then set to 0
-      requestAnimationFrame(() => {
-        details.style.transition = 'max-height 360ms cubic-bezier(.2,.9,.2,1), opacity 240ms ease';
-        details.style.maxHeight = '0px';
-        details.style.opacity = '0';
-      });
-      // after transition ends, hide and cleanup
-      const onEnd = (e) => {
-        if (e.propertyName !== 'max-height') return;
-        details.hidden = true;
-        details.style.maxHeight = '';
-        details.style.opacity = '';
-        details.style.transition = '';
-        details.removeEventListener('transitionend', onEnd);
-      };
-      details.addEventListener('transitionend', onEnd);
-      card.classList.remove('expanded');
-      if (btn) btn.setAttribute('aria-expanded', 'false');
-    }
+  const modal = document.querySelector('#detail-modal');
+  const modalTitle = document.querySelector('#modal-title');
+  const modalCopy = document.querySelector('#modal-copy');
+  const modalKicker = document.querySelector('#modal-kicker');
+  const closeButtons = modal ? modal.querySelectorAll('.modal-close,.modal-backdrop') : [];
+  let previousFocus = null;
 
-    function expandDetails(card) {
-      const details = card.querySelector('.service-details');
-      const btn = card.querySelector('.toggle-details');
-      if (!details) return;
-      // ensure visible
-      details.hidden = false;
-      // set starting state
-      details.style.maxHeight = '0px';
-      details.style.opacity = '0';
-      // allow browser to paint then expand to scrollHeight
-      requestAnimationFrame(() => {
-        details.style.transition = 'max-height 360ms cubic-bezier(.2,.9,.2,1), opacity 240ms ease';
-        details.style.maxHeight = details.scrollHeight + 'px';
-        details.style.opacity = '1';
-      });
-      // cleanup after transition
-      const onEnd = (e) => {
-        if (e.propertyName !== 'max-height') return;
-        details.style.maxHeight = ''; // allow natural height
-        details.style.transition = '';
-        details.removeEventListener('transitionend', onEnd);
-      };
-      details.addEventListener('transitionend', onEnd);
-      card.classList.add('expanded');
-      if (btn) btn.setAttribute('aria-expanded', 'true');
-    }
-
-    function toggleCard(card) {
-      if (card.classList.contains('expanded')) {
-        collapseDetails(card);
-      } else {
-        if (allowSingleOpen) {
-          document.querySelectorAll('.service-card.expanded').forEach(c => collapseDetails(c));
-        }
-        expandDetails(card);
-      }
-    }
-
-    buttons.forEach(btn => {
-      const card = btn.closest('.service-card');
-      if (!card) return;
-      const details = document.getElementById(btn.getAttribute('aria-controls'));
-      if (details) details.hidden = true; // ensure hidden initially
-
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleCard(card);
-      });
-
-      btn.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          toggleCard(card);
-        }
-      });
-    });
-
-    // Optional: if you want outside click to close, uncomment below.
-    // document.addEventListener('click', (e) => {
-    //   if (!e.target.closest('.service-card')) {
-    //     if (allowSingleOpen) {
-    //       document.querySelectorAll('.service-card.expanded').forEach(c => collapseDetails(c));
-    //     }
-    //   }
-    // });
+  function openDetail(key, trigger) {
+    const detail = details[key];
+    if (!detail || !modal) return;
+    previousFocus = trigger || document.activeElement;
+    modalTitle.textContent = detail.title;
+    modalCopy.textContent = detail.copy;
+    modalKicker.textContent = detail.kicker;
+    modal.hidden = false;
+    document.body.classList.add('modal-open');
+    modal.querySelector('.modal-close').focus();
+  }
+  function closeDetail() {
+    if (!modal || modal.hidden) return;
+    modal.hidden = true;
+    document.body.classList.remove('modal-open');
+    if (previousFocus && typeof previousFocus.focus === 'function') previousFocus.focus();
+  }
+  document.querySelectorAll('.detail-trigger').forEach(button => {
+    button.addEventListener('click', () => openDetail(button.dataset.detail, button));
   });
+  closeButtons.forEach(button => button.addEventListener('click', closeDetail));
+  document.addEventListener('keydown', event => { if (event.key === 'Escape') closeDetail(); });
+  if (modal) modal.querySelector('a[href="#contact"]').addEventListener('click', closeDetail);
+
+  const year = document.querySelector('#year');
+  if (year) year.textContent = String(new Date().getFullYear());
+
+  const revealItems = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    revealItems.forEach(item => observer.observe(item));
+  } else {
+    revealItems.forEach(item => item.classList.add('is-visible'));
+  }
 })();
